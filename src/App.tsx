@@ -1,11 +1,5 @@
 import React, { useState, useEffect } from "react"
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-  Navigate,
-  useNavigate,
-} from "react-router-dom"
+import { Routes, Route, Navigate, useNavigate } from "react-router-dom"
 import { Plus, Check, Sun, Moon, Trash2 } from "lucide-react"
 import LoginForm from "./components/LoginForm"
 import SignupForm from "./components/SignUpForm"
