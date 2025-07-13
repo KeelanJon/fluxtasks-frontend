@@ -89,6 +89,10 @@ body {
   justify-content: space-between;
   margin-bottom: 2rem;
 }
+.header-buttons-wrapper {
+  display: flex;
+  align-items: center;
+}
 
 .title {
   font-size: 1.875rem;
@@ -105,6 +109,7 @@ body {
   cursor: pointer;
   transition: all 0.3s ease;
   box-shadow: var(--shadow);
+  margin-left: 0.5rem;
 }
 
 .theme-toggle:hover {
@@ -182,6 +187,42 @@ body {
 
 .task-input:focus {
   box-shadow: 0 0 0 2px var(--focus-ring);
+}
+
+.button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background-color: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.button:hover {
+  background-color: var(--color-primary-hover);
+  transform: translateY(-1px);
+}
+
+.button-secondary {
+  padding: 0.5rem;
+  font-size: 0.875rem;
+  background-color: var(--bg-secondary);
+  color: var(--text-secondary);
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: var(--shadow);
+}
+
+.button-secondary:hover {
+  background-color: var(--hover-bg);
+  transform: translateY(-1px);
 }
 
 .add-button {
@@ -315,6 +356,25 @@ footer a:hover {
   transform: scale(1.1);
 }
 
+.cookie-banner {
+  position: fixed;
+  bottom: 1rem;
+  width: 600px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  padding: 1rem;
+  text-align: center;
+  font-size: 0.875rem;
+  z-index: 1000;
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+}
+
+.cookie-banner button {
+  margin: auto auto;
+  margin-top: 1rem;
+}
+
 /* Responsive Design */
 @media (max-width: 640px) {
   .app-content {
@@ -332,5 +392,9 @@ footer a:hover {
 
   .add-button {
     justify-content: center;
+  }
+
+  .cookie-banner {
+    width: 92%;
   }
 }

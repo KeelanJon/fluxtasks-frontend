@@ -1,6 +1,14 @@
 import React, { useState, useEffect } from "react"
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+  useNavigate,
+} from "react-router-dom"
 import { Plus, Check, Sun, Moon, Trash2 } from "lucide-react"
 import LoginForm from "./components/LoginForm"
+import SignupForm from "./components/SignUpForm"
 import "./styles/styles.css"
 
 type Task = {
@@ -18,17 +26,43 @@ export default function TodoApp() {
   const [authenticated, setAuthenticated] = useState(
     getCookie("auth") ? true : false
   )
+  const navigate = useNavigate()
+  //Handle Logout
 
-  async function getSavedTasks() {
-    const savedTasks = await fetch(import.meta.env.VITE_API_URL + "/api/tasks")
-    const data = await savedTasks.json()
+  function logout() {
+    console.log("Users Logged out")
 
-    setTasks(data)
+    document.cookie = "auth=; max-age=0; path=/"
+    setAuthenticated(false)
+    navigate("/login") // send the user back to the login page
   }
 
+  // Load tasks from localStorage on component mount
   useEffect(() => {
     getSavedTasks()
   }, [])
+
+  function getSavedTasks() {
+    try {
+      const savedTasks = localStorage.getItem("todoTasks")
+      if (savedTasks) {
+        const parsedTasks = JSON.parse(savedTasks)
+        setTasks(parsedTasks)
+      }
+    } catch (error) {
+      console.error("Error loading tasks from localStorage:", error)
+      setTasks([])
+    }
+  }
+
+  // Save tasks to localStorage whenever tasks change
+  const saveTasksToStorage = (updatedTasks: Task[]) => {
+    try {
+      localStorage.setItem("todoTasks", JSON.stringify(updatedTasks))
+    } catch (error) {
+      console.error("Error saving tasks to localStorage:", error)
+    }
+  }
 
   // Set theme attribute on document
   useEffect(() => {
@@ -43,111 +77,69 @@ export default function TodoApp() {
     return match ? match[2] : null
   }
 
-  const addTask = async () => {
-    try {
-      console.log("Adding new task")
+  const addTask = () => {
+    if (newTask.trim() === "") return
 
-      const res = await fetch(import.meta.env.VITE_API_URL + "/api/tasks", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          text: newTask.trim(),
-        }),
-      })
-
-      const data = await res.json()
-      console.log(data)
-    } catch (err) {
-      console.error("Error during POST request: ", err)
+    const newTaskObj: Task = {
+      id: Date.now(), // Simple ID generation using timestamp
+      text: newTask.trim(),
+      completed: false,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     }
 
+    const updatedTasks = [...tasks, newTaskObj]
+    setTasks(updatedTasks)
+    saveTasksToStorage(updatedTasks)
     setNewTask("")
-    getSavedTasks()
   }
 
-  const toggleTask = async (id: number) => {
-    //First get current data of the toggled task.
-    const searchIndex = tasks.findIndex((task) => task.id == id)
-
-    if (searchIndex !== -1) {
-      console.log("Found at index:", searchIndex)
-      console.log("Item:", tasks[searchIndex])
-    } else {
-      console.log("Item not found")
-    }
-
-    try {
-      const res = await fetch(
-        import.meta.env.VITE_API_URL + "/api/tasks/" + id,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            text: tasks[searchIndex].text,
-            completed: !tasks[searchIndex].completed,
-          }),
-        }
-      )
-
-      const data = await res.json()
-      console.log("Success toggling task completion: ", data)
-    } catch (err) {
-      console.error("Error during PATCH request: ", err)
-    }
-
-    setTasks(
-      tasks.map((task) =>
-        task.id === id ? { ...task, completed: !task.completed } : task
-      )
+  const toggleTask = (id: number) => {
+    const updatedTasks = tasks.map((task) =>
+      task.id === id
+        ? {
+            ...task,
+            completed: !task.completed,
+            updated_at: new Date().toISOString(),
+          }
+        : task
     )
+
+    setTasks(updatedTasks)
+    saveTasksToStorage(updatedTasks)
   }
 
-  const deleteTask = async (id: number) => {
-    try {
-      const res = await fetch(
-        import.meta.env.VITE_API_URL + "/api/tasks/" + id,
-        {
-          method: "DELETE",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      )
-
-      const data = await res.json()
-      console.log("Delete Successful: ", data)
-    } catch (err) {
-      console.error("Error during DELETE request: ", err)
-    }
-
-    setTasks(tasks.filter((task) => task.id !== id))
+  const deleteTask = (id: number) => {
+    const updatedTasks = tasks.filter((task) => task.id !== id)
+    setTasks(updatedTasks)
+    saveTasksToStorage(updatedTasks)
   }
 
   const completedCount = tasks.filter((task) => task.completed).length
   const totalCount = tasks.length
 
-  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      addTask()
-    }
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    addTask()
   }
 
-  return authenticated ? (
+  const taskAppContent = (
     <div className="app-container">
       <div className="app-content">
         {/* Header */}
         <div className="header">
           <h1 className="title">Tasks</h1>
-          <button
-            onClick={() => setDarkMode(!darkMode)}
-            className="theme-toggle"
-          >
-            {darkMode ? <Sun size={20} /> : <Moon size={20} />}
-          </button>
+          <div className="header-buttons-wrapper">
+            <button className="logout-button button-secondary" onClick={logout}>
+              Logout
+            </button>
+            <button
+              onClick={() => setDarkMode(!darkMode)}
+              className="theme-toggle"
+            >
+              {darkMode ? <Sun size={20} /> : <Moon size={20} />}
+            </button>
+          </div>
         </div>
 
         {/* Stats */}
@@ -172,12 +164,11 @@ export default function TodoApp() {
         </div>
 
         {/* Add Task Input */}
-        <div className="add-task-container">
+        <form className="add-task-container" onSubmit={handleSubmit}>
           <input
             type="text"
             value={newTask}
             onChange={(e) => setNewTask(e.target.value)}
-            onKeyPress={handleKeyPress}
             placeholder="Add a new task..."
             className="task-input"
           />
@@ -185,7 +176,7 @@ export default function TodoApp() {
             <Plus size={16} />
             Add
           </button>
-        </div>
+        </form>
 
         {/* Tasks List */}
         <div className="tasks-container">
@@ -229,7 +220,22 @@ export default function TodoApp() {
         </footer>
       </div>
     </div>
-  ) : (
-    <LoginForm setAuthenticated={setAuthenticated} />
+  )
+
+  return (
+    <Routes>
+      <Route
+        path="/"
+        element={authenticated ? taskAppContent : <Navigate to="/login" />}
+      ></Route>
+      <Route
+        path="/login"
+        element={<LoginForm setAuthenticated={setAuthenticated} />}
+      ></Route>
+      <Route
+        path="/signup"
+        element={<SignupForm setAuthenticated={setAuthenticated} />}
+      ></Route>
+    </Routes>
   )
 }
