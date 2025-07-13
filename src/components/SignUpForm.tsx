@@ -1,9 +1,10 @@
 import React, { useState } from "react"
 import { Eye, EyeOff, Lock, Mail, AlertCircle } from "lucide-react"
 import { Link, useNavigate } from "react-router-dom"
+import CookieBanner from "./CookieBanner"
 import "../styles/forms.css"
 
-type LoginFormProps = {
+type SignupFormProps = {
   setAuthenticated: (value: boolean) => void
 }
 
@@ -17,7 +18,7 @@ type FormErrors = {
   password?: string
 }
 
-const LoginForm: React.FC<LoginFormProps> = ({ setAuthenticated }) => {
+const SignupForm: React.FC<SignupFormProps> = ({ setAuthenticated }) => {
   const [formData, setFormData] = useState<FormData>({
     email: "",
     password: "",
@@ -25,7 +26,8 @@ const LoginForm: React.FC<LoginFormProps> = ({ setAuthenticated }) => {
   const [errors, setErrors] = useState<FormErrors>({})
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  const [loginMessage, setLoginMessage] = useState("")
+  const [signupMessage, setSignupMessage] = useState("")
+
   const navigate = useNavigate()
 
   const validateForm = () => {
@@ -58,36 +60,35 @@ const LoginForm: React.FC<LoginFormProps> = ({ setAuthenticated }) => {
     setErrors({})
     setIsLoading(true)
 
-    //Try to login
     try {
-      const res = await fetch(import.meta.env.VITE_API_URL + "/api/login", {
+      const res = await fetch(import.meta.env.VITE_API_URL + "/api/signup", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          username: formData.email,
+          email: formData.email,
           password: formData.password,
         }),
       })
 
       const data = await res.json()
-      console.log("Login Attempt Successful: ", data)
+      console.log("Signup Attempt Response: ", data)
 
-      if (data.success == true) {
-        console.log("User Authenticated")
+      if (data.success === true) {
         setAuthenticated(true)
         document.cookie = `auth=true; max-age=86400; path=/`
 
-        navigate("/") // redirect to /dashboard
+        navigate("/") // redirect to app
       } else {
-        console.log("Incorrect Details")
+        setSignupMessage(data.error || "Signup failed")
       }
 
       setIsLoading(false)
-      setLoginMessage(data.error)
     } catch (err) {
-      console.error("Error during Login POST request: ", err)
+      console.error("Error during Signup POST request: ", err)
+      setSignupMessage("An unexpected error occurred.")
+      setIsLoading(false)
     }
   }
 
@@ -99,7 +100,6 @@ const LoginForm: React.FC<LoginFormProps> = ({ setAuthenticated }) => {
       [name]: value,
     }))
 
-    // Clear error when user starts typing
     if (errors[name as keyof FormErrors]) {
       setErrors((prev) => ({
         ...prev,
@@ -112,11 +112,11 @@ const LoginForm: React.FC<LoginFormProps> = ({ setAuthenticated }) => {
     <div className="login-container">
       <div className="login-card">
         <div className="login-header">
-          <h1 className="login-title">Welcome Back</h1>
-          <p className="login-subtitle">Please sign in to your account</p>
+          <h1 className="login-title">Create Account</h1>
+          <p className="login-subtitle">Sign up to get started</p>
         </div>
 
-        <form>
+        <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label className="form-label">Email Address</label>
             <div className="input-wrapper">
@@ -168,47 +168,35 @@ const LoginForm: React.FC<LoginFormProps> = ({ setAuthenticated }) => {
             )}
           </div>
 
-          <div className="form-options">
-            <label className="checkbox-label">
-              <input type="checkbox" className="checkbox-input" />
-              Remember me
-            </label>
-            <a href="#" className="forgot-link">
-              Forgot password?
-            </a>
-          </div>
-
-          <button
-            onClick={handleSubmit}
-            disabled={isLoading}
-            className="submit-button"
-          >
+          <button type="submit" disabled={isLoading} className="submit-button">
             {isLoading ? (
               <>
                 <div className="loading-spinner" />
-                Signing in...
+                Signing up...
               </>
             ) : (
-              "Sign In"
+              "Sign Up"
             )}
           </button>
         </form>
 
         <div className="signup-link-container" style={{ color: "red" }}>
-          {loginMessage}
+          {signupMessage}
         </div>
 
         <div className="signup-link-container">
           <p>
-            Don't have an account?{" "}
-            <Link to="/signup" className="signup-link">
-              Sign up here
+            Already have an account?{" "}
+            <Link to="/login" className="signup-link">
+              Sign in here
             </Link>
           </p>
         </div>
       </div>
+
+      <CookieBanner />
     </div>
   )
 }
 
-export default LoginForm
+export default SignupForm
